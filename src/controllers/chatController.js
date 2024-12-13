@@ -7,14 +7,8 @@ const ChatRoom = require("../models/ChatRoom");
 exports.userChats = async (req, res) => {
   const { userId, selectedUser } = req.params;
 
-  // const senderId = userId;
-  // const recipientId = selectedUser;
-
   const firstRoomId = `${userId}_${selectedUser}`;
   const secondRoomId = `${selectedUser}_${userId}`;
-
-  console.log(firstRoomId);
-  console.log(secondRoomId);
 
   try {
     // Check for chats in the first room ID
@@ -30,12 +24,9 @@ exports.userChats = async (req, res) => {
 
     // console.log(room);
     if (room) {
-      // console.log("no room");
-      // console.log(room);
       return res.status(200).json(room.chats);
     } else {
       // If no room found, return a 404 response
-      console.log("no room");
       return res
         .status(404)
         .json({ message: "No chats found between the users." });

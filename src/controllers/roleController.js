@@ -50,7 +50,7 @@ exports.getAllMentors = async (req, res) => {
 
 exports.getAllStudents = async (req, res) => {
   const { userId } = req.params;
-  console.log(userId);
+  // console.log(userId);
   let students = null;
   try {
     if (userId === "admin") {

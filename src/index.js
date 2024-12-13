@@ -4,6 +4,8 @@ const cors = require("cors");
 const bodyParser = require("body-parser");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
+const multer = require("multer");
+const path = require("path");
 
 // Route Imports
 const authRoutes = require("./routes/auth");
@@ -23,9 +25,13 @@ const { saveMessage } = require("./helpers/functions/SaveMessages");
 // Initialize Express app
 const app = express();
 app.use(cors());
-app.use(express.json());
-app.use(bodyParser.json());
-
+app.use(bodyParser.json({ limit: "20mb" })); // Set limit to 10MB
+app.use(bodyParser.urlencoded({ limit: "20mb", extended: true })); // For form data
+// Define the path to the images folder outside the `src` directory
+// Folder to store uploaded images
+const IMAGE_FOLDER = path.join(__dirname, "../uploads", "test", "images");
+// Serve the images folder
+app.use("/images", express.static(IMAGE_FOLDER));
 // MongoDB Connection
 mongoose
   .connect(process.env.MONGO_URI)
@@ -34,6 +40,7 @@ mongoose
 
 // Routes
 app.get("/", (req, res) => res.send("Welcome to the admin"));
+
 app.use("/api/auth", authRoutes);
 app.use(
   "/api/v1",
