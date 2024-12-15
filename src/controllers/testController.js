@@ -355,7 +355,7 @@ exports.createMatchQuestion = async (req, res) => {
     // Add the question's reference to the LiveTest document
     test.Questions.push({
       questionId: question._id,
-      questionType: "select",
+      questionType: type,
     });
 
     // Save the updated LiveTest document
