@@ -1,3 +1,4 @@
+const AnswersSchema = require("../models/AnswersSchema");
 const IntegerTypeQuestions = require("../models/IntegerTypeQuestions");
 const LiveTest = require("../models/LiveTest");
 const SelectTypeQuestions = require("../models/SelectTypeQuestions");
@@ -121,6 +122,34 @@ exports.getQuestion = async (req, res) => {
     } else {
       return res.status(404).json({ message: "Question not found." });
     }
+  } catch (error) {
+    console.error("Error creating test session:", error);
+    res
+      .status(500)
+      .json({ message: "Internal server error.", error: error.message });
+  }
+};
+
+exports.getTestData = async (req, res) => {
+  try {
+    const { testId, userId } = req.params;
+    console.log(testId);
+    console.log(userId);
+
+    // Check if a session already exists for this student and test
+    const existingSession = await AnswersSchema.find({
+      $and: [{ testId: testId }, { userId: userId }],
+    });
+
+    if (!existingSession) {
+      return res
+        .status(400)
+        .json({ message: "Test session not exists for this student." });
+    }
+
+    res.status(201).json({
+      data: existingSession,
+    });
   } catch (error) {
     console.error("Error creating test session:", error);
     res

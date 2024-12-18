@@ -23,6 +23,7 @@ const Test = require("../models/Test");
 const IntegerTypeQuestions = require("../models/IntegerTypeQuestions");
 const SelectTypeQuestions = require("../models/SelectTypeQuestions");
 const MatchColumn = require("../models/matchColumnSchema");
+const AnswersSchema = require("../models/AnswersSchema");
 
 // const { created } = require("../helpers/responseHelper"); // Assuming you have a response helper
 
@@ -356,6 +357,7 @@ exports.createMatchQuestion = async (req, res) => {
     test.Questions.push({
       questionId: question._id,
       questionType: type,
+      subject: subject,
     });
 
     // Save the updated LiveTest document
@@ -386,23 +388,23 @@ exports.createSelectQuestion = async (req, res) => {
 
   // Destructuring request body with default values
   let {
-    correctAnswer = [],
-    description = "",
-    descriptionImage = "",
-    imageOptionsA = "",
-    imageOptionsB = "",
-    imageOptionsC = "",
-    imageOptionsD = "",
-    level = "easy",
-    optionType = "text",
-    subject = "",
-    subtopic = "",
-    textOptionsA = "",
-    textOptionsB = "",
-    textOptionsC = "",
-    textOptionsD = "",
-    topic = "",
-    type = "single select",
+    correctAnswer,
+    description,
+    descriptionImage,
+    imageOptionsA,
+    imageOptionsB,
+    imageOptionsC,
+    imageOptionsD,
+    level,
+    optionType,
+    subject,
+    subtopic,
+    textOptionsA,
+    textOptionsB,
+    textOptionsC,
+    textOptionsD,
+    topic,
+    type,
   } = req.body;
 
   // Fetch the test by ID
@@ -494,6 +496,7 @@ exports.createSelectQuestion = async (req, res) => {
     test.Questions.push({
       questionId: question._id,
       questionType: "select",
+      subject: subject,
     });
 
     // Save the updated LiveTest document
@@ -550,6 +553,7 @@ exports.createintTest = async (req, res) => {
     test.Questions.push({
       questionId: savedQuestion._id,
       questionType: "integer",
+      subject: subject,
     });
     // Save the updated LiveTest document
     const updatedTest = await test.save();
@@ -888,152 +892,200 @@ exports.uploadTest = async (req, res) => {
 };
 
 exports.validateTestResult = async (req, res) => {
+  const test = req.body;
+
+  if (test.length === 0) {
+    return res.status(400).json({
+      message: "Please solve some questions...",
+    });
+  }
+
+  const testId = test[0].testId;
+  const userId = test[0].userId;
+
   try {
-    const { progressId, testId, answers, userId, timeTaken, questionTime } =
-      req.body;
-
-    if (!userId) {
-      return res
-        .status(400)
-        .json({ message: "User ID is required to create progress." });
-    }
-
-    const test = await Test.findById(testId);
-    if (!test) {
-      return res.status(404).json({ message: "Test not found" });
-    }
-
-    const validationResult = await validateTest(testId, answers, questionTime);
-
-    const correctCount = validationResult.correctCount;
-    const wrongCount = validationResult.wrongCount;
-    const totalQuestions = validationResult.totalQuestions;
-    const score = validationResult.totalScore; // Use totalScore from validationResult
-
-    let progress;
-    let isNewProgress = false;
-    if (progressId) {
-      progress = await Progress.findById(progressId);
-      isNewProgress = false;
-    }
-
-    if (!progress) {
-      progress = new Progress({
-        student: userId,
-        coursesCompleted: [],
-        scores: [],
-        testResults: [],
-        overallScore: 0,
-      });
-      isNewProgress = true;
-    }
-
-    const courseName = test.name;
-
-    if (correctCount === totalQuestions) {
-      if (!progress.coursesCompleted.includes(courseName)) {
-        progress.coursesCompleted.push(courseName);
-      }
-    }
-
-    const existingScoreIndex = progress.scores.findIndex(
-      (item) => item.course === courseName
-    );
-    if (existingScoreIndex !== -1) {
-      progress.scores[existingScoreIndex].score = score;
-    } else {
-      progress.scores.push({ course: courseName, score });
-    }
-    const newResult = progress.testResults.filter(
-      (result) => result.test._id != testId
-    );
-    newResult.push({
-      test: testId,
-      totalQuestions,
-      correctCount,
-      wrongCount,
-      score,
-      dateTaken: Date.now(),
-      correctAnswers: validationResult.correctAnswers,
-      wrongAnswers: validationResult.wrongAnswers,
-      attemptedQuestionIndexes: validationResult.attemptedQuestionIndexes,
-      attemptedQuestionCount: validationResult.attemptedQuestionCount,
-      correctAnswerIndexes: validationResult.correctAnswerIndexes,
-      userAnswers: validationResult.userAnswers,
-      subjectScores: validationResult.subjectScores,
-      timeTaken,
+    const ans = await AnswersSchema.find({
+      $and: [{ testId: testId }, { userId: userId }],
     });
 
-    progress.testResults = newResult;
-
-    const totalScore = progress.scores.reduce(
-      (sum, record) => sum + record.score,
-      0
-    );
-    progress.overallScore = totalScore / progress.scores.length;
-
-    await progress.save();
-
-    if (isNewProgress) {
-      await User.findByIdAndUpdate(userId, { progressId: progress._id });
+    if (ans.length > 0) {
+      // Test is already submitted
+      return res.status(409).json({ message: "Test is already submitted." });
     }
 
-    if (!test?.students?.includes(userId)) {
-      test?.students?.push(userId);
-    }
-    test.count = test.students.length;
-
-    await test.save();
-
-    let leaderboard = await Leaderboard.findOne({ testId });
-
-    if (!leaderboard) {
-      leaderboard = new Leaderboard({ testId, entries: [] });
-    }
-
-    const existingEntryIndex = leaderboard.entries.findIndex(
-      (entry) => entry.studentId.toString() === userId
-    );
-
-    if (existingEntryIndex !== -1) {
-      leaderboard.entries[existingEntryIndex] = {
-        studentId: userId,
-        score,
-        correctAnswers: correctCount,
-        timeTaken,
-        attemptedQuestions: validationResult.attemptedQuestionCount,
-      };
-    } else {
-      leaderboard.entries.push({
-        studentId: userId,
-        score,
-        correctAnswers: correctCount,
-        timeTaken,
-        attemptedQuestions: validationResult.attemptedQuestionCount,
+    // Save answers to database
+    const savePromises = test.map((t) => {
+      const answers = new AnswersSchema({
+        questionIndex: t.questionIndex,
+        questionId: t.questionId,
+        testId: t.testId,
+        userId: t.userId,
+        userAnswer: t.userAnswer,
+        rightAnswer: t.rightAnswer,
+        questionStatus: t.questionStatus, // 'correct' or 'incorrect'
+        marks: t.marks,
+        subject: t.subject,
+        type: t.type,
       });
-    }
 
-    leaderboard.entries.sort((a, b) => b.score - a.score);
-
-    leaderboard.entries.forEach((entry, index) => {
-      entry.rank = index + 1;
+      return answers.save();
     });
 
-    await leaderboard.save();
+    // Wait for all saves to complete
+    await Promise.all(savePromises);
 
-    res.json(
-      success({
-        validationResult: { ...validationResult, timeTaken },
-        progress,
-      })
-    );
-  } catch (error) {
-    console.error("Error updating test progress:", error);
-    res
-      .status(500)
-      .json(internalServerError([{ message: "Error updating test progress" }]));
+    // Return success response
+    return res.status(200).json({ message: "Data stored successfully." });
+  } catch (err) {
+    console.error("Error validating test result:", err);
+    return res.status(500).json({ message: "Internal server error." });
   }
 };
+
+// try {
+
+//   if (!userId) {
+//     return res
+//       .status(400)
+//       .json({ message: "User ID is required to create progress." });
+//   }
+
+//   const test = await Test.findById(testId);
+//   if (!test) {
+//     return res.status(404).json({ message: "Test not found" });
+//   }
+
+//   const validationResult = await validateTest(testId, answers, questionTime);
+
+//   const correctCount = validationResult.correctCount;
+//   const wrongCount = validationResult.wrongCount;
+//   const totalQuestions = validationResult.totalQuestions;
+//   const score = validationResult.totalScore; // Use totalScore from validationResult
+
+//   let progress;
+//   let isNewProgress = false;
+//   if (progressId) {
+//     progress = await Progress.findById(progressId);
+//     isNewProgress = false;
+//   }
+
+//   if (!progress) {
+//     progress = new Progress({
+//       student: userId,
+//       coursesCompleted: [],
+//       scores: [],
+//       testResults: [],
+//       overallScore: 0,
+//     });
+//     isNewProgress = true;
+//   }
+
+//   const courseName = test.name;
+
+//   if (correctCount === totalQuestions) {
+//     if (!progress.coursesCompleted.includes(courseName)) {
+//       progress.coursesCompleted.push(courseName);
+//     }
+//   }
+
+//   const existingScoreIndex = progress.scores.findIndex(
+//     (item) => item.course === courseName
+//   );
+//   if (existingScoreIndex !== -1) {
+//     progress.scores[existingScoreIndex].score = score;
+//   } else {
+//     progress.scores.push({ course: courseName, score });
+//   }
+//   const newResult = progress.testResults.filter(
+//     (result) => result.test._id != testId
+//   );
+//   newResult.push({
+//     test: testId,
+//     totalQuestions,
+//     correctCount,
+//     wrongCount,
+//     score,
+//     dateTaken: Date.now(),
+//     correctAnswers: validationResult.correctAnswers,
+//     wrongAnswers: validationResult.wrongAnswers,
+//     attemptedQuestionIndexes: validationResult.attemptedQuestionIndexes,
+//     attemptedQuestionCount: validationResult.attemptedQuestionCount,
+//     correctAnswerIndexes: validationResult.correctAnswerIndexes,
+//     userAnswers: validationResult.userAnswers,
+//     subjectScores: validationResult.subjectScores,
+//     timeTaken,
+//   });
+
+//   progress.testResults = newResult;
+
+//   const totalScore = progress.scores.reduce(
+//     (sum, record) => sum + record.score,
+//     0
+//   );
+//   progress.overallScore = totalScore / progress.scores.length;
+
+//   await progress.save();
+
+//   if (isNewProgress) {
+//     await User.findByIdAndUpdate(userId, { progressId: progress._id });
+//   }
+
+//   if (!test?.students?.includes(userId)) {
+//     test?.students?.push(userId);
+//   }
+//   test.count = test.students.length;
+
+//   await test.save();
+
+//   let leaderboard = await Leaderboard.findOne({ testId });
+
+//   if (!leaderboard) {
+//     leaderboard = new Leaderboard({ testId, entries: [] });
+//   }
+
+//   const existingEntryIndex = leaderboard.entries.findIndex(
+//     (entry) => entry.studentId.toString() === userId
+//   );
+
+//   if (existingEntryIndex !== -1) {
+//     leaderboard.entries[existingEntryIndex] = {
+//       studentId: userId,
+//       score,
+//       correctAnswers: correctCount,
+//       timeTaken,
+//       attemptedQuestions: validationResult.attemptedQuestionCount,
+//     };
+//   } else {
+//     leaderboard.entries.push({
+//       studentId: userId,
+//       score,
+//       correctAnswers: correctCount,
+//       timeTaken,
+//       attemptedQuestions: validationResult.attemptedQuestionCount,
+//     });
+//   }
+
+//   leaderboard.entries.sort((a, b) => b.score - a.score);
+
+//   leaderboard.entries.forEach((entry, index) => {
+//     entry.rank = index + 1;
+//   });
+
+//   await leaderboard.save();
+
+//   res.json(
+//     success({
+//       validationResult: { ...validationResult, timeTaken },
+//       progress,
+//     })
+//   );
+// } catch (error) {
+//   console.error("Error updating test progress:", error);
+//   res
+//     .status(500)
+//     .json(internalServerError([{ message: "Error updating test progress" }]));
+// }
+// };
 
 exports.getTestLeaderboard = async (req, res) => {
   try {

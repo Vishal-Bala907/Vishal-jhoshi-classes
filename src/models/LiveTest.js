@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const QuestionSchema = new mongoose.Schema({
   questionId: { type: String, required: true },
   questionType: { type: String, required: true },
+  subject: { type: String, required: true },
 });
 
 const LiveTestSchema = new mongoose.Schema({

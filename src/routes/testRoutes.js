@@ -27,6 +27,10 @@ router.get(
   "/tests/api/attend/test/:testId/:studentId",
   testControllerSecond.attendTest
 );
+router.get(
+  "/tests/api/attend/getdata/:testId/:userId",
+  testControllerSecond.getTestData
+);
 
 router.get(
   "/tests/api/attend/question/:questionId/:questionType",
