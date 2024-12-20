@@ -22,6 +22,10 @@ router.get(
   "/tests/api/get/test/attended/:id",
   testControllerSecond.getAttendedTest
 );
+router.get(
+  "/tests/api/get/test/testById/:id",
+  testControllerSecond.getTestById
+);
 
 router.get(
   "/tests/api/attend/test/:testId/:studentId",

@@ -1,3 +1,4 @@
+const { json } = require("body-parser");
 const AnswersSchema = require("../models/AnswersSchema");
 const IntegerTypeQuestions = require("../models/IntegerTypeQuestions");
 const LiveTest = require("../models/LiveTest");
@@ -33,6 +34,26 @@ exports.getTest = async (req, res) => {
     }
   }
 };
+
+exports.getTestById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const test = await LiveTest.findById(id);
+
+    if (test) {
+      return res.status(201).json({ data: test });
+    } else {
+      return res.status(404).message({ message: "test not found" });
+    }
+  } catch (error) {
+    console.error("Error fetching test sessions:", error);
+    res
+      .status(500)
+      .json({ message: "Internal server error.", error: error.message });
+  }
+};
+
 exports.getAttendedTest = async (req, res) => {
   try {
     const { id } = req.params; // `id` represents the student ID
