@@ -44,7 +44,7 @@ exports.getTestById = async (req, res) => {
     if (test) {
       return res.status(201).json({ data: test });
     } else {
-      return res.status(404).message({ message: "test not found" });
+      return res.status(404).json({ message: "test not found" });
     }
   } catch (error) {
     console.error("Error fetching test sessions:", error);
