@@ -21,6 +21,7 @@ const { Server } = require("socket.io");
 const Message = require("./models/Message");
 
 const { saveMessage } = require("./helpers/functions/SaveMessages");
+const AdminNotifications = require("./models/AdminNotifications");
 
 // Initialize Express app
 const app = express();
@@ -102,29 +103,36 @@ io.on("connection", (socket) => {
         .catch((err) => {
           console.error(err);
         });
-      //    const recipient = await User.findById(roomId);
-      // if (!recipient) {
-      //   return console.error(`Recipient with ID ${roomId} not found.`);
-      // }
-
-      // const newMessage = new Message({
-      //   sender: socket.user.id,
-      //   senderName: socket.user.name,
-      //   recipient: recipient._id,
-      //   recipientName: recipient.name,
-      //   MESSAGE,
-      // });
-
-      // await newMessage.save();
-
-      // console.log(
-      //   `Message from ${user.name} to ${recipient.name}: ${message}`
-      // );
     } catch (error) {
       console.error("Error sending message:", error);
     }
   });
 
+  socket.on("adminNotification", async ({ sessionObj }) => {
+    if (sessionObj) {
+      const { sessionName, time, date } = sessionObj;
+      const DATE = new Date(date);
+
+      // Create the notification object
+      const notification = new AdminNotifications({
+        sender: "admin",
+        time: time,
+        date: DATE,
+        message: `New Live ${sessionName} Class Will Be Taken at ${date} - ${time}`,
+      });
+
+      try {
+        // Save the notification to the database
+        const noti = await notification.save();
+
+        // Broadcast the notification to all connected clients
+        io.emit("adminNoti", noti); // Broadcast to all connected clients
+      } catch (error) {
+        console.error("Error saving notification:", error);
+        socket.emit("error", { message: "Unable to save notification." });
+      }
+    }
+  });
   socket.on("disconnect", () => {
     if (socket.user) {
       console.log("User disconnected:", socket.user.id);
