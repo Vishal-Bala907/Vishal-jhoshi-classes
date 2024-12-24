@@ -8,6 +8,7 @@ const {
   deleteSession,
   createSessionAlert,
   getAllTodaysSessions,
+  goLiveWithSession,
 } = require("../controllers/sessionController");
 
 const router = express.Router();
@@ -18,6 +19,8 @@ router.post("/session/create", createSessionAlert);
 router.post("/session/get/today", getAllTodaysSessions);
 
 router.get("/session/:sessionId", getSessionById);
+
+router.get("/session/goLive/:sessionId/:role/:userId", goLiveWithSession);
 
 // Get all sessions for a specific user
 router.get("/session/user/:userId", getAllSessions);

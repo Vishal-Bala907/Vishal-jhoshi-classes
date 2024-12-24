@@ -133,6 +133,10 @@ io.on("connection", (socket) => {
       }
     }
   });
+
+  socket.on("startingLive", async ({ message }) => {
+    io.emit("liveStarting", { message: message });
+  });
   socket.on("disconnect", () => {
     if (socket.user) {
       console.log("User disconnected:", socket.user.id);

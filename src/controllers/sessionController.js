@@ -1,6 +1,7 @@
 const Session = require("../models/Session"); // Import your Session model
 const User = require("../models/User"); // Import your User model if needed
 const AdminNotifications = require("../models/AdminNotifications");
+const { RtcTokenBuilder, RtcRole } = require("agora-access-token");
 
 // exports.createSessionAlert = async (req, res) => {
 //   const { sessionName, time, date } = req.body;
@@ -51,6 +52,69 @@ exports.getAllTodaysSessions = async (req, res) => {
   }
 };
 
+// Get session details by session ID
+exports.goLiveWithSession = async (req, res) => {
+  const { sessionId, role, userId } = req.params;
+
+  const CHANNEL_NAME = "admin";
+  const APP_ID = process.env.APP_ID;
+  const APP_CERTIFICATE = process.env.APP_CERTIFICATE;
+  const DEFAULT_EXPIRATION_TIME = process.env.TOKEN_EXPIRATION || 86400;
+  const ROLE = role === "admin" ? RtcRole.PUBLISHER : RtcRole.SUBSCRIBER;
+  const USER_ID = userId;
+  // Calculate expiration time
+  const currentTime = Math.floor(Date.now() / 1000); // Current UNIX timestamp
+  const privilegeExpireTime =
+    currentTime + parseInt(DEFAULT_EXPIRATION_TIME, 10);
+
+  // Ensure environment variables are loaded correctly
+  if (!APP_ID || !APP_CERTIFICATE) {
+    console.error("APP_ID and APP_CERTIFICATE must be set in the environment.");
+    process.exit(1);
+  }
+
+  try {
+    // Fetch the session by ID
+    const session = await Session.findById(sessionId);
+
+    if (!session) {
+      return res.status(404).json({ message: "Session not found" });
+    }
+
+    // Update the session status to ACTIVE
+    session.status = "ACTIVE";
+    await session.save();
+    //generate token
+    const token = RtcTokenBuilder.buildTokenWithUid(
+      APP_ID,
+      APP_CERTIFICATE,
+      CHANNEL_NAME,
+      USER_ID,
+      ROLE,
+      privilegeExpireTime
+    );
+
+    // Send a success response
+    res.status(200).json({
+      message: "Session is now live",
+      session,
+      data: {
+        token,
+        CHANNEL_NAME,
+        ROLE,
+        USER_ID,
+        privilegeExpireTime,
+      },
+    });
+  } catch (error) {
+    // Handle errors
+    console.error("Error activating session:", error);
+    res.status(500).json({
+      message: "An error occurred while updating the session",
+      error: error.message,
+    });
+  }
+};
 // Get session details by session ID
 exports.getSessionById = async (req, res) => {
   const { sessionId } = req.params;
