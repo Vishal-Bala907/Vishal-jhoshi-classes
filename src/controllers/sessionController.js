@@ -51,6 +51,31 @@ exports.getAllTodaysSessions = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+exports.getAllSessionsOfThisMonth = async (req, res) => {
+  const currentDate = new Date();
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth();
+
+  // Set the start of the month (1st day at 00:00:00)
+  const startOfMonth = new Date(year, month, 1);
+
+  // Set the end of the month (last day at 23:59:59)
+  const endOfMonth = new Date(year, month + 1, 0, 23, 59, 59, 999);
+
+  try {
+    const sessions = await Session.find({
+      date: {
+        $gte: startOfMonth, // From the start of the month
+        $lte: endOfMonth, // To the end of the month
+      },
+    });
+
+    res.status(200).json(sessions);
+  } catch (err) {
+    console.error("Error fetching sessions:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
 
 // Get session details by session ID
 exports.goLiveWithSession = async (req, res) => {
@@ -83,6 +108,11 @@ exports.goLiveWithSession = async (req, res) => {
 
     // Update the session status to ACTIVE
     session.status = "ACTIVE";
+
+    if (role === "admin") {
+      session.startTime = new Date().toTimeString().split(" ")[0];
+    }
+
     await session.save();
     //generate token
     const token = RtcTokenBuilder.buildTokenWithUid(
@@ -129,6 +159,40 @@ exports.getSessionById = async (req, res) => {
     res.json(session);
   } catch (error) {
     console.error("Error fetching session:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+//
+// Update session status by session ID
+exports.updateSessionById = async (req, res) => {
+  const { status, sessionId } = req.params; // Extract status from request body
+  // const {  } = req.params; // Extract sessionId from request parameters
+
+  console.log(status, sessionId);
+
+  try {
+    // Find the session by ID
+    const session = await Session.findById(sessionId);
+
+    if (!session) {
+      return res.status(404).json({ message: "Session not found" });
+    }
+
+    // Update the session status
+    session.status = status;
+
+    // Add the current time (HH:mm:ss) as the end time
+    const now = new Date();
+    const endTime = now.toTimeString().split(" ")[0]; // Extract time as HH:mm:ss
+    session.endTime = endTime;
+
+    // Save the updated session to the database
+    await session.save();
+
+    res.status(200).json({ message: "Session updated successfully", session });
+  } catch (error) {
+    console.error("Error updating session:", error);
     res.status(500).json({ message: "Server error" });
   }
 };

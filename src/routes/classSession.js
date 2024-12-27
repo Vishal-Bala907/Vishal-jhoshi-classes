@@ -9,6 +9,8 @@ const {
   createSessionAlert,
   getAllTodaysSessions,
   goLiveWithSession,
+  getAllSessionsOfThisMonth,
+  updateSessionById,
 } = require("../controllers/sessionController");
 
 const router = express.Router();
@@ -19,6 +21,10 @@ router.post("/session/create", createSessionAlert);
 router.post("/session/get/today", getAllTodaysSessions);
 
 router.get("/session/:sessionId", getSessionById);
+
+router.get("/session/update/:status/:sessionId", updateSessionById);
+
+router.get("/session/all/this-month", getAllSessionsOfThisMonth);
 
 router.get("/session/goLive/:sessionId/:role/:userId", goLiveWithSession);
 
