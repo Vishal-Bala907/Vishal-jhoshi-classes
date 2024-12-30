@@ -35,6 +35,20 @@ exports.getTest = async (req, res) => {
   }
 };
 
+exports.updateTestAttemp = async (req, res) => {
+  const { testId } = req.params;
+  try {
+    const test = LiveTest.findById(testId);
+    if (!test) {
+      return res.json(404).message({ message: "test-not-found" });
+    }
+    test.canAttempt = true;
+    await test.save();
+  } catch (err) {
+    return res.json(500).message({ message: `server error ${err.message}` });
+  }
+};
+
 exports.getTestById = async (req, res) => {
   try {
     const { id } = req.params;

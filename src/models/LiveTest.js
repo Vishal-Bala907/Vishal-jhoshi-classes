@@ -18,6 +18,11 @@ const LiveTestSchema = new mongoose.Schema({
   negativeMarking: { type: Number, required: true },
   timestamp: { type: Number, required: true },
   Questions: [QuestionSchema], // Array of question objects
+  canAttempt: {
+    type: Boolean,
+    required: true,
+    default: false,
+  },
 });
 
 module.exports = mongoose.model("LiveTest", LiveTestSchema);

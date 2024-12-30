@@ -18,6 +18,12 @@ router.post(
 router.post("/tests/api/create/match/:id", testController.createMatchQuestion);
 
 router.get("/tests/api/get/test/:role", testControllerSecond.getTest);
+
+router.get(
+  "/tests/api/update/test-attempt/:testId",
+  testControllerSecond.updateTestAttemp
+);
+
 router.get(
   "/tests/api/get/test/attended/:id",
   testControllerSecond.getAttendedTest
@@ -34,6 +40,11 @@ router.get(
 router.get(
   "/tests/api/attend/getdata/:testId/:userId",
   testControllerSecond.getTestData
+);
+
+router.get(
+  "/tests/api/attend/question/:questionId/:questionType",
+  testControllerSecond.getQuestion
 );
 
 router.get(

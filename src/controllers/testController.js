@@ -926,6 +926,7 @@ exports.validateTestResult = async (req, res) => {
         marks: t.marks,
         subject: t.subject,
         type: t.type,
+        timeTaken: t.timeTaken,
       });
 
       return answers.save();

@@ -25,7 +25,6 @@ const SelectTestQuestionSchema = new mongoose.Schema({
   imageOptionsC: { type: String, default: "" }, // Option C (Image URL or base64)
   imageOptionsD: { type: String, default: "" }, // Option D (Image URL or base64)
   correctAnswer: { type: [String], default: [] }, // Array of correct answers (for multi-select)
-  createdAt: { type: Date, default: Date.now }, // Timestamp of when the question is created
 });
 
 module.exports = mongoose.model("SelectTestQuestion", SelectTestQuestionSchema);

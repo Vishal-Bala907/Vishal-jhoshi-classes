@@ -21,7 +21,7 @@ const TestQuestionSchema = new mongoose.Schema({
   type: {
     type: String,
     required: true,
-    enum: ["single select", "multiple select", "integer", "match the column"], // Specific question types
+    enum: ["integer"], // Specific question types
   },
   description: {
     type: String,

@@ -46,6 +46,10 @@ const AnswersSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  timeTaken: {
+    type: String,
+    required: true,
+  },
 });
 
 // Export the schema
