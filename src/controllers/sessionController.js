@@ -52,28 +52,39 @@ exports.getAllTodaysSessions = async (req, res) => {
   }
 };
 exports.getAllSessionsOfThisMonth = async (req, res) => {
-  const currentDate = new Date();
-  const year = currentDate.getFullYear();
-  const month = currentDate.getMonth();
-
-  // Set the start of the month (1st day at 00:00:00)
-  const startOfMonth = new Date(year, month, 1);
-
-  // Set the end of the month (last day at 23:59:59)
-  const endOfMonth = new Date(year, month + 1, 0, 23, 59, 59, 999);
-
   try {
+    const { date } = req.params;
+
+    // Parse the date from the request parameters
+    const providedDate = new Date(date);
+
+    if (isNaN(providedDate)) {
+      return res.status(400).json({ message: "Invalid date provided." });
+    }
+
+    // Extract the year and month from the provided date
+    const year = providedDate.getFullYear();
+    const month = providedDate.getMonth(); // 0-indexed (0 for January, 11 for December)
+
+    // Calculate the start and end of the specified month
+    const startOfMonth = new Date(year, month, 1, 0, 0, 0); // First day of the month
+    const endOfMonth = new Date(year, month + 1, 0, 23, 59, 59); // Last day of the month
+
+    // Fetch sessions within the date range
     const sessions = await Session.find({
       date: {
-        $gte: startOfMonth, // From the start of the month
-        $lte: endOfMonth, // To the end of the month
+        $gte: startOfMonth,
+        $lte: endOfMonth,
       },
     });
 
+    // Respond with the fetched sessions
     res.status(200).json(sessions);
-  } catch (err) {
-    console.error("Error fetching sessions:", err);
-    res.status(500).json({ message: "Server error" });
+  } catch (error) {
+    console.error("Error fetching sessions of the month:", error);
+    res
+      .status(500)
+      .json({ message: "Failed to fetch sessions.", error: error.message });
   }
 };
 

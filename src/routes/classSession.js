@@ -24,7 +24,7 @@ router.get("/session/:sessionId", getSessionById);
 
 router.get("/session/update/:status/:sessionId", updateSessionById);
 
-router.get("/session/all/this-month", getAllSessionsOfThisMonth);
+router.get("/session/all/month/:date", getAllSessionsOfThisMonth);
 
 router.get("/session/goLive/:sessionId/:role/:userId", goLiveWithSession);
 
