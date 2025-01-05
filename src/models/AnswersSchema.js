@@ -30,7 +30,7 @@ const AnswersSchema = new mongoose.Schema({
   },
   questionStatus: {
     type: String,
-    enum: ["CORRECT", "INCORRECT"],
+    enum: ["CORRECT", "INCORRECT", "INIT"],
     required: true,
   },
   marks: {

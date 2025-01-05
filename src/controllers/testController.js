@@ -1,7 +1,7 @@
 const mammoth = require("mammoth");
 const Progress = require("../models/Progress");
 const User = require("../models/User");
-const Leaderboard = require("../models/Test-Leaderboard");
+const Leaderboard = require("../models/TestLeaderboard");
 const { validationResult } = require("express-validator");
 const {
   parseQuestionsAndOptions,
@@ -24,6 +24,7 @@ const IntegerTypeQuestions = require("../models/IntegerTypeQuestions");
 const SelectTypeQuestions = require("../models/SelectTypeQuestions");
 const MatchColumn = require("../models/matchColumnSchema");
 const AnswersSchema = require("../models/AnswersSchema");
+const TestLeaderboard = require("../models/TestLeaderboard");
 
 // const { created } = require("../helpers/responseHelper"); // Assuming you have a response helper
 
@@ -893,6 +894,7 @@ exports.uploadTest = async (req, res) => {
 
 exports.validateTestResult = async (req, res) => {
   const test = req.body;
+  console.log(test);
 
   if (test.length === 0) {
     return res.status(400).json({
@@ -909,11 +911,12 @@ exports.validateTestResult = async (req, res) => {
     });
 
     if (ans.length > 0) {
-      // Test is already submitted
       return res.status(409).json({ message: "Test is already submitted." });
     }
 
     // Save answers to database
+    let mark = 0;
+    let obtainedMarks = 0;
     const savePromises = test.map((t) => {
       const answers = new AnswersSchema({
         questionIndex: t.questionIndex,
@@ -929,13 +932,48 @@ exports.validateTestResult = async (req, res) => {
         timeTaken: t.timeTaken,
       });
 
+      obtainedMarks += t.marks;
+      if (t.marks > 0) {
+        mark = t.marks;
+      }
+
       return answers.save();
     });
 
-    // Wait for all saves to complete
     await Promise.all(savePromises);
 
-    // Return success response
+    // Calculate test statistics
+    const correctCount = test.filter(
+      (t) => t.questionStatus === "CORRECT"
+    ).length;
+    const incorrectCount = test.filter(
+      (t) => t.questionStatus === "INCORRECT"
+    ).length;
+    const unansweredCount = test.length - correctCount - incorrectCount;
+
+    const totalTimeTaken = test.reduce((acc, t) => acc + t.timeTaken, 0);
+    const totalQuestions = test.length;
+    const averageTimePerQuestion =
+      totalQuestions > 0 ? totalTimeTaken / totalQuestions : 0;
+    const accuracy =
+      totalQuestions > 0 ? (correctCount / totalQuestions) * 100 : 0;
+
+    // Save test statistics
+    const testStats = new TestLeaderboard({
+      userId,
+      testId,
+      correctCount,
+      incorrectCount,
+      unansweredCount,
+      accuracy,
+      totalTimeTaken,
+      averageTimePerQuestion,
+      mark,
+      obtainedMarks,
+    });
+
+    await testStats.save();
+
     return res.status(200).json({ message: "Data stored successfully." });
   } catch (err) {
     console.error("Error validating test result:", err);
@@ -1092,9 +1130,7 @@ exports.getTestLeaderboard = async (req, res) => {
   try {
     const { testId } = req.params;
 
-    const leaderboard = await Leaderboard.findOne({ testId })
-      .populate("entries.studentId", "name") // Assuming `User` schema has a `name` field
-      .select("-__v -createdAt -updatedAt"); // Exclude unnecessary fields
+    const leaderboard = await TestLeaderboard.find({ testId });
 
     if (!leaderboard) {
       return res
