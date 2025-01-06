@@ -98,24 +98,24 @@ exports.saveSelectQuestions = async (req, res) => {
     });
 
     // Log or save the data to a database
-    console.log({
-      subject,
-      topic,
-      subtopic,
-      level,
-      type,
-      description,
-      descriptionImage: savedDescriptionImage,
-      optionType,
-      textOptions: {
-        A: textOptionsA,
-        B: textOptionsB,
-        C: textOptionsC,
-        D: textOptionsD,
-      },
-      imageOptions: savedImageOptions,
-      correctAnswer,
-    });
+    // console.log({
+    //   subject,
+    //   topic,
+    //   subtopic,
+    //   level,
+    //   type,
+    //   description,
+    //   descriptionImage: savedDescriptionImage,
+    //   optionType,
+    //   textOptions: {
+    //     A: textOptionsA,
+    //     B: textOptionsB,
+    //     C: textOptionsC,
+    //     D: textOptionsD,
+    //   },
+    //   imageOptions: savedImageOptions,
+    //   correctAnswer,
+    // });
 
     // Return success response
     res.status(200).json({
@@ -130,7 +130,7 @@ exports.saveSelectQuestions = async (req, res) => {
 };
 
 exports.createTestMeta = async (req, res) => {
-  console.log(req.body);
+  // console.log(req.body);
   try {
     const {
       Questions,
@@ -170,6 +170,45 @@ exports.createTestMeta = async (req, res) => {
     return res.status(201).json({ message: data });
   } catch (error) {
     return res.status(500).json(internalServerError("Error creating test"));
+  }
+};
+
+exports.rescheduleTest = async (req, res) => {
+  try {
+    const { testId, testDate, testTime } = req.body;
+
+    // Parse the date string into a Date object
+    const [year, month, day] = testDate.split("-").map(Number);
+    const parsedDate = new Date(year, month - 1, day);
+    const timestamp = parsedDate.getTime();
+
+    // Fetch the original test by ID
+    const originalTest = await LiveTest.findById(testId);
+    if (!originalTest) {
+      return res.status(404).json({ message: "Test not found" });
+    }
+
+    // Create a new test object by cloning the original and updating fields
+    const newTest = new LiveTest({
+      ...originalTest.toObject(), // Clone all fields from the original test
+      _id: undefined, // Remove the `_id` field to allow MongoDB to generate a new one
+      testDate, // Update the date
+      testTime, // Update the time
+      timestamp, // Update the timestamp
+    });
+
+    // Save the new test object to the database
+    const savedTest = await newTest.save();
+
+    return res.status(201).json({
+      message: "Test duplicated and rescheduled successfully",
+      data: savedTest,
+    });
+  } catch (error) {
+    console.error("Error duplicating and rescheduling test:", error);
+    return res
+      .status(500)
+      .json({ message: "Error duplicating and rescheduling test" });
   }
 };
 
