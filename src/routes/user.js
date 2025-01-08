@@ -8,6 +8,8 @@ const {
   startStudySession,
   stopStudySession,
   updateImage,
+  getStudySessions,
+  getAllStudySessions,
 } = require("../controllers/userController");
 
 const router = express.Router();
@@ -27,5 +29,10 @@ router.post("/progress/:progressId", updateUserProgress);
 router.post("/studyMode/startStudySession", startStudySession);
 
 router.post("/studyMode/stopStudySession", stopStudySession);
+
+router.post("/studyMode/stopStudySession", stopStudySession);
+
+router.get("/studyMode/study-sessions", getStudySessions);
+router.get("/studyMode/all/:userId", getAllStudySessions);
 
 module.exports = router;

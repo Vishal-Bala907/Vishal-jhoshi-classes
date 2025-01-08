@@ -230,21 +230,91 @@ exports.startStudySession = async (req, res) => {
 };
 
 exports.stopStudySession = async (req, res) => {
-  const { sessionId } = req.body;
+  const { userId, subject, startTime, endTime, date, duration } = req.body;
 
   try {
-    const session = await StudySession.findById(sessionId);
-    if (!session)
-      return res.status(404).json({ message: "Study session not found" });
+    // Validate data
+    if (!userId || !subject || !startTime || !endTime || !date || !duration) {
+      return res.status(400).json({ error: "All fields are required" });
+    }
 
-    session.endTime = new Date();
-    session.duration = Math.round(
-      (session.endTime - session.startTime) / 60000
-    );
+    // Create a new session document
+    const session = new StudySession({
+      userId,
+      subject,
+      startTime,
+      endTime,
+      date,
+      duration,
+    });
+
+    // Save to database
     await session.save();
 
-    res.status(200).json({ message: "Study session ended", session });
+    return res
+      .status(201)
+      .json({ message: "Session saved successfully", session });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "Server error" });
+  }
+};
+exports.getStudySessions = async (req, res) => {
+  try {
+    const { userId } = req.query; // Get userId from query params
+
+    if (!userId) {
+      return res.status(400).json({ error: "UserId is required" });
+    }
+
+    // Fetch all study sessions for the given userId
+    const sessions = await StudySession.find({ userId });
+
+    // Aggregate total time spent on each subject
+    const subjectTimeMap = {};
+
+    sessions.forEach((session) => {
+      const { subject, duration } = session;
+
+      if (subjectTimeMap[subject]) {
+        subjectTimeMap[subject] += duration;
+      } else {
+        subjectTimeMap[subject] = duration;
+      }
+    });
+
+    // Return the aggregated data in the desired format
+    const result = Object.keys(subjectTimeMap).map((subject) => ({
+      subject,
+      totalTime: subjectTimeMap[subject], // Total time in minutes
+    }));
+
+    return res.status(200).json(result);
   } catch (error) {
-    res.status(500).json({ message: "Error ending study session", error });
+    console.error("Error fetching study sessions:", error);
+    return res
+      .status(500)
+      .json({ error: "An error occurred while fetching study sessions" });
+  }
+};
+
+// Get all study sessions for a specific user
+exports.getAllStudySessions = async (req, res) => {
+  const { userId } = req.params;
+  // console.log("userid " + userId);
+  try {
+    const sessions = await StudySession.find({ userId });
+
+    if (!sessions) {
+      return res
+        .status(404)
+        .json({ message: "No study sessions found for this user." });
+    }
+
+    // Return the study sessions as a response
+    res.status(200).json(sessions);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error fetching study sessions." });
   }
 };
