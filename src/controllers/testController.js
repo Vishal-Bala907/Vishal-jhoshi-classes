@@ -219,7 +219,7 @@ exports.createMatchQuestion = async (req, res) => {
   let leftImgA, leftImgB, leftImgC, leftImgD;
   let descriptionImagePath = "";
 
-  console.log(req.body);
+  // console.log(req.body);
 
   const {
     subject,
