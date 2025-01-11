@@ -99,6 +99,7 @@ exports.goLiveWithSession = async (req, res) => {
   const ROLE = role === "admin" ? RtcRole.PUBLISHER : RtcRole.SUBSCRIBER;
   const USER_ID = userId;
   // Calculate expiration time
+  console.log("hello ", process.env.APP_CERTIFICATE);
   const currentTime = Math.floor(Date.now() / 1000); // Current UNIX timestamp
   const privilegeExpireTime =
     currentTime + parseInt(DEFAULT_EXPIRATION_TIME, 10);
