@@ -23,9 +23,21 @@ const Message = require("./models/Message");
 const { saveMessage } = require("./helpers/functions/SaveMessages");
 const AdminNotifications = require("./models/AdminNotifications");
 
+// CORS options to specify allowed origins
+const corsOptions = {
+  origin: "https://vishal-joshi-sir-classes-fontend.vercel.app", // Frontend URL
+  methods: ["GET", "POST", "PUT", "DELETE"], // Specify allowed methods
+  allowedHeaders: ["Content-Type", "Authorization"], // Specify allowed headers
+};
+
 // Initialize Express app
 const app = express();
-app.use(cors());
+
+// Apply CORS middleware globally
+app.use(cors(corsOptions));
+
+app.options("*", cors(corsOptions));  // Allow OPTIONS preflight request
+
 app.use(bodyParser.json({ limit: "20mb" })); // Set limit to 10MB
 app.use(bodyParser.urlencoded({ limit: "20mb", extended: true })); // For form data
 // Define the path to the images folder outside the `src` directory
