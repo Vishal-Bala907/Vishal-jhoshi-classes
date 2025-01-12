@@ -24,8 +24,13 @@ const { saveMessage } = require("./helpers/functions/SaveMessages");
 const AdminNotifications = require("./models/AdminNotifications");
 
 // CORS options to specify allowed origins
+// const corsOptions = {
+//   origin: "https://vishal-joshi-sir-classes-fontend.vercel.app", // Frontend URL
+//   methods: ["GET", "POST", "PUT", "DELETE"], // Specify allowed methods
+//   allowedHeaders: ["Content-Type", "Authorization"], // Specify allowed headers
+// };
 const corsOptions = {
-  origin: "https://vishal-joshi-sir-classes-fontend.vercel.app", // Frontend URL
+  origin: "*", // Frontend URL
   methods: ["GET", "POST", "PUT", "DELETE"], // Specify allowed methods
   allowedHeaders: ["Content-Type", "Authorization"], // Specify allowed headers
 };
