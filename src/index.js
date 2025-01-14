@@ -21,20 +21,29 @@ const { Server } = require("socket.io");
 const Message = require("./models/Message");
 const { saveMessage } = require("./helpers/functions/SaveMessages");
 const AdminNotifications = require("./models/AdminNotifications");
+const app = express();
 
-// CORS options to specify allowed origins
+const allowedOrigins = [
+  "https://vishal-joshi-sir-classes-fontend.vercel.app", // Production
+  "http://localhost:3000", // Development
+];
+
 const corsOptions = {
-  origin: "https://vishal-joshi-sir-classes-fontend.vercel.app", // Replace with your frontend URL
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error(`CORS Error: Origin ${origin} is not allowed.`));
+    }
+  },
   methods: ["GET", "POST", "PUT", "DELETE"],
   allowedHeaders: ["Content-Type", "Authorization"],
-  credentials: true, // Allow credentials (e.g., cookies)
+  credentials: true,
 };
 
-// Initialize Express app
-const app = express();
-app.use(cors(corsOptions)); // Apply CORS middleware globally
+// Apply CORS middleware
+app.use(cors(corsOptions));
 app.options("*", cors(corsOptions)); // Handle preflight requests
-
 // Body Parser configuration
 app.use(bodyParser.json({ limit: "20mb" }));
 app.use(bodyParser.urlencoded({ limit: "20mb", extended: true }));
@@ -65,9 +74,9 @@ app.use(
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "https://vishal-joshi-sir-classes-fontend.vercel.app", // Frontend URL
+    origin: allowedOrigins,
     methods: ["GET", "POST"],
-    credentials: true, // Allow credentials if necessary
+    credentials: true,
   },
 });
 
