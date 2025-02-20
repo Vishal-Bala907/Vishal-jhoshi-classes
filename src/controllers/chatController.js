@@ -2,6 +2,7 @@ const Message = require("../models/Message");
 
 const mongoose = require("mongoose");
 const ChatRoom = require("../models/ChatRoom");
+const User = require("../models/User");
 // const Message = require("../../models/Message");
 
 exports.userChats = async (req, res) => {
@@ -33,6 +34,55 @@ exports.userChats = async (req, res) => {
     }
   } catch (error) {
     console.error("Error fetching chats: ", error);
+    return res.status(500).json({ message: "Internal server error." });
+  }
+};
+exports.updateSeen = async (req, res) => {
+  const { userId, selectedUser } = req.params;
+
+  try {
+    if (userId === "admin") {
+      const user = await User.findOne({ role: "admin" });
+      if (user && !user.seenBy.includes(selectedUser)) {
+        user.seenBy.push(selectedUser);
+        await user.save();
+      }
+    } else {
+      const user = await User.findOne({ _id: userId });
+      if (user && !user.seenBy.includes(selectedUser)) {
+        user.seenBy.push(selectedUser);
+        await user.save();
+      }
+    }
+
+    return res.status(200).json({ message: "Seen updated successfully" });
+  } catch (err) {
+    console.error("Error Updating seen: ", err);
+    return res.status(500).json({ message: "Internal server error." });
+  }
+};
+
+exports.removeSeen = async (req, res) => {
+  const { userId, selectedUser } = req.params;
+
+  try {
+    if (userId === "admin") {
+      const user = await User.findOne({ role: "admin" });
+      if (user && user.seenBy.includes(selectedUser)) {
+        user.seenBy = user.seenBy.filter((u) => u !== selectedUser);
+        await user.save();
+      }
+    } else {
+      const user = await User.findOne({ _id: userId });
+      if (user && user.seenBy.includes(selectedUser)) {
+        user.seenBy = user.seenBy.filter((u) => u !== selectedUser);
+        await user.save();
+      }
+    }
+
+    return res.status(200).json({ message: "Seen removed successfully" });
+  } catch (err) {
+    console.error("Error Removing seen: ", err);
     return res.status(500).json({ message: "Internal server error." });
   }
 };
