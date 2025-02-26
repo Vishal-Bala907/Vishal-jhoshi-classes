@@ -97,6 +97,7 @@ exports.goLiveWithSession = async (req, res) => {
   const APP_CERTIFICATE = process.env.APP_CERTIFICATE;
   const DEFAULT_EXPIRATION_TIME = process.env.TOKEN_EXPIRATION || 86400;
   const ROLE = role === "admin" ? RtcRole.PUBLISHER : RtcRole.SUBSCRIBER;
+  const USER_ROLE = role === "admin" ? "admin" : "student";
   const USER_ID = userId;
   // Calculate expiration time
   console.log("hello ", process.env.APP_CERTIFICATE);
@@ -145,6 +146,7 @@ exports.goLiveWithSession = async (req, res) => {
         CHANNEL_NAME,
         ROLE,
         USER_ID,
+        USER_ROLE,
         privilegeExpireTime,
       },
     });
